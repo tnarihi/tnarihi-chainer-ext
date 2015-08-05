@@ -9,7 +9,8 @@ from chainer import gradient_check
 from chainer import testing
 from chainer.testing import attr
 from chainer.testing import condition
-from deconvolution_2d import Deconvolution2D, get_deconv_outsize
+from tnarihi_chainer_ext.layers.deconvolution_2d import (
+    Deconvolution2D, get_deconv_outsize)
 
 if cuda.available:
     cuda.init()
