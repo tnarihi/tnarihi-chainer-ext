@@ -10,7 +10,7 @@ from chainer import testing
 from chainer.testing import attr
 from chainer.testing import condition
 
-from tnarihi_chainer_ext.layers import maximum, minimum
+from tnarihi_chainer_ext.functions import maximum, minimum
 
 if cuda.available:
     cuda.init()
