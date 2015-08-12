@@ -1,3 +1,5 @@
+from future.builtins import super
+
 from chainer import function
 
 
