@@ -5,7 +5,8 @@ from tnarihi_chainer_ext import WrappedFunctions
 
 
 def set_attr_from_args(d):
-    '''call__set_attr_from_args(locals()) at the top of your `__init__` method'''
+    '''call __set_attr_from_args(locals()) at the top of your `__init__`
+    method'''
     kls = d['self']
     del d['self']
     kls.__dict__.update(d)
@@ -13,7 +14,8 @@ def set_attr_from_args(d):
 
 class VggConvUnit(WrappedFunctions):
 
-    def __init__(self, ichannels, ochannels, num=2, pooling_method='max', bn=False, nonlin='relu'):
+    def __init__(self, ichannels, ochannels, num=2, pooling_method='max',
+                 bn=False, nonlin='relu'):
         '''
         '''
         set_attr_from_args(locals())
