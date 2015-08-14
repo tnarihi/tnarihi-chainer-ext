@@ -35,12 +35,20 @@ class VggConvUnit(WrappedFunctions):
 
     def __call__(self, x, train=True, finetune=False):
         h = x
+        self.hs = []
         for i in range(self.num):
             nonlin = F.relu  # TODO: other activation
             if i == self.num - 1 and self.bn:
                 nonlin = lambda xx: F.relu(self.f.bn(xx, not train, finetune))
             h = nonlin(getattr(self.f, 'conv{}'.format(i+1))(h))
+            self.hs += [h]
         # TODO: other pooling method
         if self.pooling_method != 'sub':
             h = F.max_pooling_2d(h, 2, 2)
         return h
+
+    def __getstate__(self):
+        odict = self.__dict__.copy()
+        del odict['hs']
+        return odict
+
