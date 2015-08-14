@@ -33,12 +33,12 @@ class VggConvUnit(WrappedFunctions):
             setattr(f, 'bn', F.BatchNormalization(ochannels))
         self.f = f
 
-    def __call__(self, x):
+    def __call__(self, x, train=True, finetune=False):
         h = x
         for i in range(self.num):
             nonlin = F.relu  # TODO: other activation
             if i == self.num - 1 and self.bn:
-                nonlin = lambda xx: F.relu(self.f.bn(xx))
+                nonlin = lambda xx: F.relu(self.f.bn(xx, not train, finetune))
             h = nonlin(getattr(self.f, 'conv{}'.format(i+1))(h))
         # TODO: other pooling method
         if self.pooling_method != 'sub':
