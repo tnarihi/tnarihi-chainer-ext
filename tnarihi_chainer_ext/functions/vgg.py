@@ -52,3 +52,104 @@ class VggConvUnit(WrappedFunctions):
         del odict['hs']
         return odict
 
+
+def load_conv_params(params, prefix, convunit):
+    """Load VGG conv parameters.
+
+    Loading from the object from a mat file created by
+    `vgg_caffemodel_to_mat.py`.
+
+    Args:
+        params (dict-like): A dictionary which has the conv parameters like
+            'convx_y_W', 'convx_y_b' etc. Usually you get it from a mat file
+            that is created by `vgg_caffemodel_to_mat.py`.
+        prefix (str): If you want to put the parameters from `conv1_y_{W|b}`,
+            you will set it as 'conv1'.
+        convunit (VggConvUnit): A instance of `VggConvUnit` class.
+    Returns:
+        None
+    """
+    i = 0
+    while True:
+        key = prefix + '_{}'.format(i + 1)
+        try:
+            c = getattr(convunit.f, 'conv{}'.format(i + 1))
+        except:
+            break
+        cc_W = params[key + '_W']
+        cc_b = params[key + '_b']
+        c.W = cc_W.copy()
+        cc_b = cc_b.copy()
+        print('weights {} is loaded'.format(key))
+        i += 1
+
+
+def load_fc_params(params, key, fc):
+    """
+    Load VGG fc parameters.
+
+    Args:
+        params (dict-like): See `load_conv_params`.
+        key (str): See `prefix` argument in `load_conv_params`.
+        fc (F.Linear): Linear object
+    """
+    fc.W = params[key + '_W'].copy()
+    fc.b = params[key + '_b'].copy()
+    print('weights {} is loaded'.format(key))
+
+
+class Vgg16(WrappedFunctions):
+
+    """An example implementation of VGG 16 layer as a Function class
+    """
+
+    def __init__(self):
+        from chainer import FunctionSet
+        import chainer.functions as F
+        self.f = FunctionSet(
+            conv1=VggConvUnit(3, 64, 2),
+            conv2=VggConvUnit(64, 128, 2),
+            conv3=VggConvUnit(128, 256, 3),
+            conv4=VggConvUnit(256, 512, 3),
+            conv5=VggConvUnit(512, 512, 3),
+            fc6=F.Linear(512 * 7 * 7, 4096),
+            fc7=F.Linear(4096, 4096),
+            fc8=F.Linear(4096, 1000),
+        )
+
+    def __call__(self, x, train=True, finetune=False):
+        model = self.f
+        self.hs = []
+        h = x
+        for i in range(5):
+            h = getattr(model, 'conv{}'.format(i + 1))(h, train, finetune)
+            self.hs += [h]
+        h = F.dropout(F.relu(model.fc6(h)), train=train)
+        self.hs += [h]
+        h = F.dropout(F.relu(model.fc7(h)), train=train)
+        self.hs += [h]
+        h = model.fc8(h)
+        return h
+
+    def forward_loss(self, x, t, train=True):
+        h = self.forward(x, train=train)
+        return F.softmax_cross_entropy(h, t), F.accuracy(h, t)
+
+    def __getstate__(self):
+        odict = self.__dict__.copy()
+        del odict['hs']
+        return odict
+
+    def load_params(self, params, bgr2rgb=True):
+        model = self.f
+        for i in range(8):
+            if i < 5:
+                load_conv_params(params, 'conv{}'.format(i + 1),
+                                 getattr(model, 'conv{}'.format(i + 1)))
+            else:
+                load_fc_params(params, 'fc{}'.format(i + 1),
+                               getattr(model, 'fc{}'.format(i + 1)))
+        if bgr2rgb:
+            model.conv1.f.conv1.W = \
+                model.conv1.f.conv1.W[:, ::-1].copy(order='C')
+        return self
