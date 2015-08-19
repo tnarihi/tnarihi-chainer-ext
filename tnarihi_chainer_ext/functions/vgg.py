@@ -33,18 +33,35 @@ class VggConvUnit(WrappedFunctions):
             setattr(f, 'bn', F.BatchNormalization(ochannels))
         self.f = f
 
-    def __call__(self, x, train=True, finetune=False):
+    def _create_last_nonlinearity(self, train, finetune, no_last_nonlin):
+        """Creating last nonlinearity (lambda) function
+        """
+        last_nonlin = lambda xx: xx
+        # creating last nonlinearity
+        if self.bn:
+            pre_bn = last_nonlin
+            last_nonlin = lambda xx: self.bn(
+                pre_bn(xx), not train, finetune)
+        if self.pooling_method != "sub":
+            pre_pooling = last_nonlin
+            # TODO: other pooling methods
+            last_nonlin = lambda xx: F.max_pooling_2d(pre_pooling(xx), 2, 2)
+        if not no_last_nonlin:
+            pre_nonlin = last_nonlin
+            # TODO: other activation
+            last_nonlin = lambda xx: F.relu(pre_nonlin(xx))
+        return last_nonlin
+
+    def __call__(self, x, train=True, finetune=False, no_last_nonlin=False):
         h = x
         self.hs = []
         for i in range(self.num):
             nonlin = F.relu  # TODO: other activation
-            if i == self.num - 1 and self.bn:
-                nonlin = lambda xx: F.relu(self.f.bn(xx, not train, finetune))
+            if i == self.num - 1:
+                nonlin = self._create_last_nonlinearity(
+                    train, finetune, no_last_nonlin)
             h = nonlin(getattr(self.f, 'conv{}'.format(i+1))(h))
             self.hs += [h]
-        # TODO: other pooling method
-        if self.pooling_method != 'sub':
-            h = F.max_pooling_2d(h, 2, 2)
         return h
 
     def __getstate__(self):
