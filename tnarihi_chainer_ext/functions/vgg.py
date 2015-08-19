@@ -30,7 +30,7 @@ class VggConvUnit(WrappedFunctions):
             setattr(f, 'conv{}'.format(i+1),
                     F.Convolution2D(ic, ochannels, 3, stride=stride, pad=1))
         if bn:
-            setattr(f, 'bn', F.BatchNormalization(ochannels))
+            f.bn = F.BatchNormalization(ochannels)
         self.f = f
 
     def _create_last_nonlinearity(self, train, finetune, no_last_nonlin):
