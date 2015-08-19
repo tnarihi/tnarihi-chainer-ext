@@ -53,6 +53,13 @@ class VggConvUnit(WrappedFunctions):
         return last_nonlin
 
     def __call__(self, x, train=True, finetune=False, no_last_nonlin=False):
+        """
+        Args:
+            x (Variable) : Input with a shape of (b, c, h, w)
+            train (bool): Flag for training, valid for BN layers
+            finetune (bool): Flag for BN finetune mode
+            no_last_nonlin (bool): Flag for turning off the last nonlinearity
+        """
         h = x
         self.hs = []
         for i in range(self.num):
