@@ -127,15 +127,15 @@ class Vgg16(WrappedFunctions):
     """An example implementation of VGG 16 layer as a Function class
     """
 
-    def __init__(self):
+    def __init__(self, bn=False, pool_method='max'):
         from chainer import FunctionSet
         import chainer.functions as F
         self.f = FunctionSet(
-            conv1=VggConvUnit(3, 64, 2),
-            conv2=VggConvUnit(64, 128, 2),
-            conv3=VggConvUnit(128, 256, 3),
-            conv4=VggConvUnit(256, 512, 3),
-            conv5=VggConvUnit(512, 512, 3),
+            conv1=VggConvUnit(3, 64, 2, bn=bn, pooling_method=pool_method),
+            conv2=VggConvUnit(64, 128, 2, bn=bn, pooling_method=pool_method),
+            conv3=VggConvUnit(128, 256, 3, bn=bn, pooling_method=pool_method),
+            conv4=VggConvUnit(256, 512, 3, bn=bn, pooling_method=pool_method),
+            conv5=VggConvUnit(512, 512, 3, bn=bn, pooling_method=pool_method),
             fc6=F.Linear(512 * 7 * 7, 4096),
             fc7=F.Linear(4096, 4096),
             fc8=F.Linear(4096, 1000),
