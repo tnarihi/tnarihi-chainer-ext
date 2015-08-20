@@ -52,13 +52,15 @@ class VggConvUnit(WrappedFunctions):
             last_nonlin = lambda xx: F.relu(pre_nonlin(xx))
         return last_nonlin
 
-    def __call__(self, x, train=True, finetune=False, no_last_nonlin=False):
+    def __call__(self, x, train=True, finetune=False, no_last_nonlin=False,
+                 keep_intermediates=False):
         """
         Args:
             x (Variable) : Input with a shape of (b, c, h, w)
             train (bool): Flag for training, valid for BN layers
             finetune (bool): Flag for BN finetune mode
             no_last_nonlin (bool): Flag for turning off the last nonlinearity
+            keep_intermediates (bool): Flag for keeping intermediate results
         """
         h = x
         self.hs = []
@@ -68,12 +70,14 @@ class VggConvUnit(WrappedFunctions):
                 nonlin = self._create_last_nonlinearity(
                     train, finetune, no_last_nonlin)
             h = nonlin(getattr(self.f, 'conv{}'.format(i+1))(h))
-            self.hs += [h]
+            if keep_intermediates:
+                self.hs += [h]
         return h
 
     def __getstate__(self):
         odict = self.__dict__.copy()
-        del odict['hs']
+        if hasattr(odict, 'hs'):
+            del odict['hs']
         return odict
 
 
@@ -141,19 +145,28 @@ class Vgg16(WrappedFunctions):
             fc8=F.Linear(4096, 1000),
         )
 
-    def __call__(self, x, train=True, finetune=False):
+    def __call__(self, x, train=True, finetune=False,
+                 keep_intermediates=False):
         model = self.f
-        self.hs = []
+        self.clean_intermediates()
         h = x
         for i in range(5):
             h = getattr(model, 'conv{}'.format(i + 1))(h, train, finetune)
-            self.hs += [h]
+            if keep_intermediates:
+                self.hs += [h]
         h = F.dropout(F.relu(model.fc6(h)), train=train)
-        self.hs += [h]
+        if keep_intermediates:
+            self.hs += [h]
         h = F.dropout(F.relu(model.fc7(h)), train=train)
-        self.hs += [h]
+        if keep_intermediates:
+            self.hs += [h]
         h = model.fc8(h)
         return h
+
+    def clean_intermediates(self):
+        self.hs = []
+        for i in range(5):
+            getattr(self.f, 'conv{}'.format(i + 1)).hs = []
 
     def forward_loss(self, x, t, train=True):
         h = self.forward(x, train=train)
@@ -161,7 +174,8 @@ class Vgg16(WrappedFunctions):
 
     def __getstate__(self):
         odict = self.__dict__.copy()
-        del odict['hs']
+        if hasattr(odict, 'hs'):
+            del odict['hs']
         return odict
 
     def load_params(self, params, bgr2rgb=True):
