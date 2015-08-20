@@ -169,7 +169,7 @@ class Vgg16(WrappedFunctions):
             getattr(self.f, 'conv{}'.format(i + 1)).hs = []
 
     def forward_loss(self, x, t, train=True):
-        h = self.forward(x, train=train)
+        h = self(x, train=train)
         return F.softmax_cross_entropy(h, t), F.accuracy(h, t)
 
     def __getstate__(self):
