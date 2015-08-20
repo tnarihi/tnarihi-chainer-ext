@@ -40,7 +40,7 @@ class VggConvUnit(WrappedFunctions):
         # creating last nonlinearity
         if self.bn:
             pre_bn = last_nonlin
-            last_nonlin = lambda xx: self.bn(
+            last_nonlin = lambda xx: self.f.bn(
                 pre_bn(xx), not train, finetune)
         if self.pooling_method != "sub":
             pre_pooling = last_nonlin
