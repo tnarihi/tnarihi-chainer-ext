@@ -5,6 +5,9 @@ I just started playing with [Chainer](http://chainer.org/) which is a deep learn
 ## Dependencies
 
 * Chainer >= 1.1.1
+* chainer-cuda-deps
+* future
+* futures
 
 ## Functions
 ### Deconvolution2D
